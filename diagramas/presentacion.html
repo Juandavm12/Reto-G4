@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentación — Refactorización Creator &amp; SRP</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;600&display=swap');
+
+        :root {
+            --bg-dark: #0a0a1a;
+            --bg-card: #111128;
+            --bg-code: #1a1a35;
+            --accent: #64ffda;
+            --accent2: #bb86fc;
+            --danger: #e94560;
+            --text: #ccd6f6;
+            --text-dim: #8892b0;
+            --border: #233554;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: .9rem 1rem;
+            background: rgba(10,10,26,.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        nav a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: .82rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: color .2s;
+        }
+        nav a:hover, nav a.active { color: var(--accent); }
+
+        /* ── SECTIONS ── */
+        section {
+            min-height: 100vh;
+            padding: 7rem 2rem 4rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+        .hero .subtitle {
+            color: var(--text-dim);
+            font-size: 1.25rem;
+            margin-top: .8rem;
+        }
+        .hero .badges {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .badge {
+            padding: .4rem 1.2rem;
+            border-radius: 20px;
+            font-size: .8rem;
+            font-weight: 600;
+            border: 1px solid;
+        }
+        .badge-creator { color: var(--accent); border-color: var(--accent); background: rgba(100,255,218,.08); }
+        .badge-srp { color: var(--accent2); border-color: var(--accent2); background: rgba(187,134,252,.08); }
+
+        /* ── HEADINGS ── */
+        h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1.8rem;
+            position: relative;
+            display: inline-block;
+        }
+        h2::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: -6px;
+            width: 60px; height: 3px;
+            border-radius: 2px;
+            background: var(--accent);
+        }
+        h3 {
+            font-size: 1.15rem;
+            color: var(--accent2);
+            margin: 1.5rem 0 .6rem;
+        }
+
+        /* ── CARDS ── */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px,1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.8rem;
+            transition: transform .2s, border-color .2s;
+        }
+        .card:hover { transform: translateY(-4px); border-color: var(--accent); }
+        .card h4 {
+            font-size: 1.05rem;
+            color: var(--accent);
+            margin-bottom: .6rem;
+        }
+        .card p, .card li { color: var(--text-dim); font-size: .92rem; }
+        .card ul { padding-left: 1.2rem; }
+        .card ul li { margin-bottom: .3rem; }
+
+        /* ── CODE BLOCKS ── */
+        pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.4rem 1.6rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: .82rem;
+            line-height: 1.8;
+            margin: 1rem 0;
+        }
+        code { font-family: 'Fira Code', monospace; }
+        .hl-bad { color: var(--danger); font-weight: 600; }
+        .hl-good { color: var(--accent); font-weight: 600; }
+        .hl-kw { color: var(--accent2); }
+        .hl-str { color: #a8e6cf; }
+        .hl-cmt { color: #546e7a; font-style: italic; }
+
+        /* ── COMPARISON ── */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 750px) { .comparison { grid-template-columns: 1fr; } }
+        .comparison .panel {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        .panel-title {
+            font-weight: 700;
+            font-size: .85rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .panel-title.bad { color: var(--danger); }
+        .panel-title.good { color: var(--accent); }
+
+        /* ── Q&A ── */
+        .qa-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 1.2rem;
+            border-left: 4px solid var(--accent2);
+        }
+        .qa-item .question {
+            font-weight: 700;
+            color: var(--accent2);
+            margin-bottom: .5rem;
+            font-size: 1rem;
+        }
+        .qa-item .answer { color: var(--text-dim); font-size: .93rem; }
+        .qa-item .answer strong { color: var(--accent); }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        th, td {
+            padding: .7rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: .9rem;
+        }
+        th { color: var(--accent); font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; }
+        td { color: var(--text-dim); }
+
+        /* ── STRUCTURE ── */
+        .tree {
+            font-family: 'Fira Code', monospace;
+            font-size: .85rem;
+            color: var(--text-dim);
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.4rem 1.8rem;
+            line-height: 1.9;
+            margin: 1rem 0;
+        }
+        .tree .dir { color: var(--accent); font-weight: 600; }
+        .tree .file { color: var(--text-dim); }
+        .tree .new-badge { color: var(--accent2); font-weight: 600; }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+            font-size: .8rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── SCROLL ANIMATIONS ── */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity .6s ease, transform .6s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════ NAV ═══════════════════ -->
+<nav>
+    <a href="#hero">Inicio</a>
+    <a href="#problema">Problema</a>
+    <a href="#principios">Principios</a>
+    <a href="#preguntas">Preguntas</a>
+    <a href="#refactorizacion">Refactorización</a>
+    <a href="#estructura">Estructura</a>
+    <a href="#resultado">Resultado</a>
+</nav>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section id="hero" class="hero">
+    <h1>Refactorización con Creator &amp; SRP</h1>
+    <p class="subtitle">Sistema de Biblioteca &mdash; Reto Técnico Grupo 4</p>
+    <div class="badges">
+        <span class="badge badge-creator">Creator — GRASP</span>
+        <span class="badge badge-srp">SRP — SOLID</span>
+    </div>
+</section>
+
+<!-- ═══════════════════ PROBLEMA ═══════════════════ -->
+<section id="problema">
+    <h2 class="fade-in">El Problema</h2>
+
+    <p class="fade-in" style="color:var(--text-dim); margin-bottom:1rem;">
+        La clase <code>SistemaBiblioteca</code> concentra <strong style="color:var(--danger)">5+ responsabilidades</strong>
+        y crea objetos que no le corresponden. Es una <em>God Class</em>.
+    </p>
+
+    <pre class="fade-in"><span class="hl-kw">class</span> SistemaBiblioteca:
+
+    <span class="hl-kw">def</span> registrar_usuario(self, nombre, email):
+        usuario = Usuario(nombre, email)          <span class="hl-cmt"># 1. Crea Usuario ✓</span>
+        tarjeta = Tarjeta(usuario.id)             <span class="hl-bad"># 2. Crea Tarjeta ✗ (debería ser Usuario)</span>
+        <span class="hl-bad">print(f"Guardando usuario y tarjeta en BD...")</span>  <span class="hl-cmt"># 3. Persistencia ✗</span>
+        <span class="hl-bad">print(f"Enviando email a {email}")</span>              <span class="hl-cmt"># 4. Notificación ✗</span>
+        <span class="hl-kw">return</span> usuario
+
+    <span class="hl-kw">def</span> realizar_prestamo(self, usuario, libro):
+        prestamo = Prestamo(usuario.id, libro.id) <span class="hl-cmt"># 5. Crea Préstamo</span>
+        <span class="hl-bad">libro.disponible = False</span>                   <span class="hl-cmt"># 6. Modifica Libro directamente ✗</span>
+        <span class="hl-bad">print(f"Guardando préstamo en BD...")</span>         <span class="hl-cmt"># 7. Persistencia ✗</span>
+        <span class="hl-bad">print(f"Notificando a {usuario.nombre}")</span>      <span class="hl-cmt"># 8. Notificación ✗</span>
+        <span class="hl-kw">return</span> prestamo</pre>
+
+    <div class="card-grid fade-in">
+        <div class="card" style="border-color: var(--danger);">
+            <h4 style="color:var(--danger);">Violaciones de Creator (GRASP)</h4>
+            <ul>
+                <li><code>SistemaBiblioteca</code> crea <code>Tarjeta</code>, pero no la contiene ni la usa directamente.</li>
+                <li>Según Creator, <strong>Usuario</strong> debería crear Tarjeta porque la contiene/agrega.</li>
+            </ul>
+        </div>
+        <div class="card" style="border-color: var(--danger);">
+            <h4 style="color:var(--danger);">Violaciones de SRP (SOLID)</h4>
+            <ul>
+                <li>Persistencia en BD (guardar usuario, guardar préstamo).</li>
+                <li>Notificaciones (enviar email, notificar usuario).</li>
+                <li>Lógica de negocio (modificar estado de Libro).</li>
+                <li>Orquestación de flujos.</li>
+                <li><strong>4+ razones de cambio</strong> en una sola clase.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ PRINCIPIOS ═══════════════════ -->
+<section id="principios">
+    <h2 class="fade-in">Los Principios</h2>
+
+    <div class="comparison fade-in">
+        <div class="panel">
+            <div class="panel-title" style="color:var(--accent);">🔵 Creator — GRASP</div>
+            <p style="color:var(--text-dim); font-size:.92rem; margin-bottom:.8rem;">
+                <em>"La clase B debería crear instancias de A si B <strong>contiene</strong>, <strong>agrega</strong>,
+                registra, utiliza directamente o tiene los datos de inicialización de A."</em>
+            </p>
+            <p style="color:var(--text-dim); font-size:.92rem;">
+                En nuestro caso: <code>Usuario</code> contiene a <code>Tarjeta</code>,
+                por lo tanto <strong>Usuario</strong> es el creador natural de Tarjeta.
+            </p>
+        </div>
+        <div class="panel">
+            <div class="panel-title" style="color:var(--accent2);">🟣 SRP — SOLID</div>
+            <p style="color:var(--text-dim); font-size:.92rem; margin-bottom:.8rem;">
+                <em>"Una clase debería tener una, y solo una, razón para cambiar."</em>
+            </p>
+            <p style="color:var(--text-dim); font-size:.92rem;">
+                <code>SistemaBiblioteca</code> cambiaba si cambiaba la BD, el email,
+                la lógica de negocio o los modelos. Ahora cada responsabilidad vive en su propia clase.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ PREGUNTAS ═══════════════════ -->
+<section id="preguntas">
+    <h2 class="fade-in">Respuestas al Reto</h2>
+
+    <div class="qa-item fade-in">
+        <div class="question">1. ¿Cuántos objetos crea <code>registrar_usuario()</code>?</div>
+        <div class="answer">
+            Crea <strong>2 objetos</strong>: un <code>Usuario</code> y una <code>Tarjeta</code>.
+            Ambos son instanciados directamente dentro del método.
+        </div>
+    </div>
+
+    <div class="qa-item fade-in">
+        <div class="question">2. ¿Quién DEBERÍA crear <code>Tarjeta</code> según Creator?</div>
+        <div class="answer">
+            <strong>Usuario</strong> debería crear <code>Tarjeta</code>, ya que Usuario <strong>contiene/agrega</strong> a Tarjeta.
+            Según el principio Creator de GRASP, la responsabilidad de creación recae en quien contiene, agrega,
+            registra o usa directamente al objeto creado. En esta relación, la Tarjeta pertenece al Usuario.
+        </div>
+    </div>
+
+    <div class="qa-item fade-in">
+        <div class="question">3. ¿Cuántas responsabilidades tiene <code>SistemaBiblioteca</code>?</div>
+        <div class="answer">
+            Tiene <strong>al menos 5 responsabilidades</strong>:
+            <br>① Crear objetos del dominio (Usuario, Tarjeta, Prestamo)
+            <br>② Persistencia en base de datos
+            <br>③ Envío de notificaciones/emails
+            <br>④ Modificar estado de otros objetos (Libro)
+            <br>⑤ Orquestar flujos de negocio
+            <br><br>Según SRP, debería tener <strong>una sola razón de cambio</strong>.
+        </div>
+    </div>
+
+    <div class="qa-item fade-in">
+        <div class="question">4. ¿Qué code smell ves aquí?</div>
+        <div class="answer">
+            <strong>God Class / Blob</strong> — una clase que lo hace todo.
+            También se aprecia <strong>Feature Envy</strong> al modificar directamente
+            <code>libro.disponible = False</code> en vez de pedirle al propio <code>Libro</code>
+            que gestione su estado. Hay acoplamiento fuerte y baja cohesión.
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ REFACTORIZACIÓN ═══════════════════ -->
+<section id="refactorizacion">
+    <h2 class="fade-in">Cómo se Refactorizó</h2>
+
+    <h3 class="fade-in">Paso 1 — Aplicar Creator: Usuario crea Tarjeta</h3>
+    <div class="comparison fade-in">
+        <div class="panel">
+            <div class="panel-title bad">✗ Antes</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-cmt"># En SistemaBiblioteca</span>
+usuario = Usuario(nombre, email)
+<span class="hl-bad">tarjeta = Tarjeta(usuario.id)</span>
+</pre>
+        </div>
+        <div class="panel">
+            <div class="panel-title good">✓ Después</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-cmt"># En Usuario.__init__</span>
+<span class="hl-good">self.tarjeta = self._crear_tarjeta()</span>
+
+<span class="hl-kw">def</span> _crear_tarjeta(self):
+    <span class="hl-kw">return</span> Tarjeta(self.id)
+</pre>
+        </div>
+    </div>
+
+    <h3 class="fade-in">Paso 2 — Aplicar SRP: Extraer Repositorios</h3>
+    <div class="comparison fade-in">
+        <div class="panel">
+            <div class="panel-title bad">✗ Antes</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-cmt"># Todo dentro de SistemaBiblioteca</span>
+<span class="hl-bad">print(f"Guardando usuario y tarjeta en BD...")</span>
+<span class="hl-bad">print(f"Guardando préstamo en BD...")</span>
+</pre>
+        </div>
+        <div class="panel">
+            <div class="panel-title good">✓ Después</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-cmt"># Clases separadas con responsabilidad única</span>
+<span class="hl-kw">class</span> <span class="hl-good">RepositorioUsuarios</span>:
+    <span class="hl-kw">def</span> guardar(self, usuario): ...
+
+<span class="hl-kw">class</span> <span class="hl-good">RepositorioPrestamos</span>:
+    <span class="hl-kw">def</span> guardar(self, prestamo): ...
+</pre>
+        </div>
+    </div>
+
+    <h3 class="fade-in">Paso 3 — Aplicar SRP: Extraer Notificador</h3>
+    <div class="comparison fade-in">
+        <div class="panel">
+            <div class="panel-title bad">✗ Antes</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-bad">print(f"Enviando email a {email}")</span>
+<span class="hl-bad">print(f"Notificando a {usuario.nombre}")</span>
+</pre>
+        </div>
+        <div class="panel">
+            <div class="panel-title good">✓ Después</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-kw">class</span> <span class="hl-good">Notificador</span>:
+    <span class="hl-kw">def</span> enviar_email(self, email): ...
+    <span class="hl-kw">def</span> notificar_usuario(self, usuario): ...
+</pre>
+        </div>
+    </div>
+
+    <h3 class="fade-in">Paso 4 — Aplicar SRP: Libro gestiona su estado</h3>
+    <div class="comparison fade-in">
+        <div class="panel">
+            <div class="panel-title bad">✗ Antes</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-cmt"># Desde SistemaBiblioteca</span>
+<span class="hl-bad">libro.disponible = False</span>
+</pre>
+        </div>
+        <div class="panel">
+            <div class="panel-title good">✓ Después</div>
+<pre style="margin:0; border:none; background:transparent; padding:0;">
+<span class="hl-cmt"># Libro gestiona su propio estado</span>
+<span class="hl-good">libro.marcar_no_disponible()</span>
+
+<span class="hl-cmt"># Dentro de la clase Libro:</span>
+<span class="hl-kw">def</span> marcar_no_disponible(self):
+    self.disponible = <span class="hl-kw">False</span>
+</pre>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ ESTRUCTURA ═══════════════════ -->
+<section id="estructura">
+    <h2 class="fade-in">Estructura del Proyecto</h2>
+
+    <div class="tree fade-in">
+<span class="dir">Reto G4/</span>
+├── RetoTecnico.py                        <span class="hl-cmt"># Código original (sin modificar)</span>
+├── main.py                               <span class="new-badge"># Punto de entrada refactorizado</span>
+└── <span class="dir">refactorizado/</span>
+    ├── __init__.py
+    ├── sistema_biblioteca.py             <span class="new-badge"># Solo orquestación</span>
+    ├── <span class="dir">modelos/</span>
+    │   ├── __init__.py
+    │   ├── usuario.py                    <span class="new-badge"># Creator: crea Tarjeta</span>
+    │   ├── tarjeta.py
+    │   ├── libro.py                      <span class="new-badge"># SRP: gestiona su disponibilidad</span>
+    │   └── prestamo.py
+    └── <span class="dir">servicios/</span>
+        ├── __init__.py
+        ├── repositorio_usuarios.py       <span class="new-badge"># SRP: persistencia usuarios</span>
+        ├── repositorio_prestamos.py      <span class="new-badge"># SRP: persistencia préstamos</span>
+        └── notificador.py                <span class="new-badge"># SRP: notificaciones</span>
+    </div>
+
+    <h3 class="fade-in">Resumen de responsabilidades</h3>
+    <table class="fade-in">
+        <thead>
+            <tr><th>Clase</th><th>Responsabilidad</th><th>Principio</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>SistemaBiblioteca</td><td>Orquestar flujos de registro y préstamo</td><td>SRP</td></tr>
+            <tr><td>Usuario</td><td>Datos del usuario + crear su Tarjeta</td><td>Creator</td></tr>
+            <tr><td>Tarjeta</td><td>Datos de la tarjeta de biblioteca</td><td>—</td></tr>
+            <tr><td>Libro</td><td>Datos del libro + gestionar su disponibilidad</td><td>SRP</td></tr>
+            <tr><td>Prestamo</td><td>Datos del préstamo</td><td>—</td></tr>
+            <tr><td>RepositorioUsuarios</td><td>Persistencia de usuarios en BD</td><td>SRP</td></tr>
+            <tr><td>RepositorioPrestamos</td><td>Persistencia de préstamos en BD</td><td>SRP</td></tr>
+            <tr><td>Notificador</td><td>Envío de emails y notificaciones</td><td>SRP</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ═══════════════════ RESULTADO ═══════════════════ -->
+<section id="resultado">
+    <h2 class="fade-in">Resultado Final</h2>
+
+    <div class="card-grid fade-in">
+        <div class="card" style="border-color:var(--danger);">
+            <h4 style="color:var(--danger);">Antes</h4>
+            <ul>
+                <li>1 clase con 5+ responsabilidades</li>
+                <li>SistemaBiblioteca crea Tarjeta (viola Creator)</li>
+                <li>Persistencia embebida en la lógica</li>
+                <li>Notificaciones embebidas en la lógica</li>
+                <li>Modifica objetos externos directamente</li>
+                <li>Alta acoplamiento, baja cohesión</li>
+            </ul>
+        </div>
+        <div class="card" style="border-color:var(--accent);">
+            <h4>Después</h4>
+            <ul>
+                <li>8 clases, cada una con 1 responsabilidad</li>
+                <li>Usuario crea Tarjeta (Creator ✓)</li>
+                <li>Repositorios separados para persistencia</li>
+                <li>Notificador independiente</li>
+                <li>Libro gestiona su propio estado</li>
+                <li>Bajo acoplamiento, alta cohesión</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card fade-in" style="margin-top:2rem; border-color:var(--accent); text-align:center;">
+        <h4>La salida del programa es idéntica</h4>
+        <pre style="text-align:left; display:inline-block;">
+Guardando usuario y tarjeta en BD...
+Enviando email a juan@email.com
+Guardando préstamo en BD...
+Notificando a Juan</pre>
+        <p style="margin-top:.8rem; color:var(--text-dim); font-size:.9rem;">
+            Se refactorizó la estructura interna sin alterar el comportamiento externo.
+        </p>
+    </div>
+</section>
+
+<footer>
+    Reto Técnico — Grupo 4 &middot; Principios Creator (GRASP) y SRP (SOLID) &middot; 2026
+</footer>
+
+<!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+<script>
+    // Scroll-driven fade-in animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Active nav link
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('nav a');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) current = s.id; });
+        navLinks.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+        });
+    });
+</script>
+</body>
+</html>

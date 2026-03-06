@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Clases — Antes de Refactorizar</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            width: 100%;
+            padding: 2rem 0 1rem;
+            text-align: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 2px solid #e94560;
+        }
+        header h1 {
+            font-size: 2rem;
+            color: #e94560;
+            letter-spacing: 2px;
+        }
+        header p {
+            margin-top: .5rem;
+            color: #8892b0;
+            font-size: 1rem;
+        }
+        .badge-bad {
+            display: inline-block;
+            margin-top: .8rem;
+            padding: .35rem 1.2rem;
+            background: rgba(233, 69, 96, .15);
+            border: 1px solid #e94560;
+            border-radius: 20px;
+            color: #e94560;
+            font-weight: 600;
+            font-size: .85rem;
+        }
+        #diagram-container {
+            flex: 1;
+            width: 95%;
+            max-width: 1100px;
+            margin: 2rem auto;
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid #233554;
+        }
+        .mermaid { text-align: center; }
+        .legend {
+            width: 95%;
+            max-width: 1100px;
+            margin: 0 auto 2rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            font-size: .85rem;
+            color: #8892b0;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        footer {
+            width: 100%;
+            text-align: center;
+            padding: 1.2rem;
+            color: #4a5568;
+            font-size: .8rem;
+            border-top: 1px solid #233554;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Diagrama de Clases — ANTES</h1>
+    <p>Código original sin aplicar principios Creator (GRASP) ni SRP (SOLID)</p>
+    <span class="badge-bad">⚠ Violaciones de principios detectadas</span>
+</header>
+
+<div id="diagram-container">
+    <div class="mermaid">
+classDiagram
+    class SistemaBiblioteca {
+        +registrar_usuario(nombre, email) Usuario
+        +realizar_prestamo(usuario, libro) Prestamo
+    }
+    class Usuario {
+        +int id
+        +str nombre
+        +str email
+    }
+    class Tarjeta {
+        +str numero
+        +int usuario_id
+    }
+    class Prestamo {
+        +int id
+        +int usuario_id
+        +int libro_id
+    }
+    class Libro {
+        +int id
+        +str titulo
+        +bool disponible
+    }
+
+    SistemaBiblioteca ..> Usuario : crea
+    SistemaBiblioteca ..> Tarjeta : crea ⚠
+    SistemaBiblioteca ..> Prestamo : crea
+    SistemaBiblioteca ..> Libro : modifica directamente ⚠
+
+    note for SistemaBiblioteca "VIOLACIONES:\n1. Crea Tarjeta (debería ser Usuario → Creator)\n2. Guarda en BD (debería ser Repositorio → SRP)\n3. Envía emails (debería ser Notificador → SRP)\n4. Modifica Libro directamente (SRP)\nResponsabilidades: 5+"
+    </div>
+</div>
+
+<div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#e94560;"></div> Violación de principio</div>
+    <div class="legend-item"><div class="legend-color" style="background:#64ffda;"></div> Clase del modelo</div>
+    <div class="legend-item"><div class="legend-color" style="background:#8892b0;"></div> Dependencia</div>
+</div>
+
+<footer>Reto Técnico — Grupo 4 · Principios Creator (GRASP) y SRP (SOLID)</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'dark',
+        themeVariables: {
+            primaryColor: '#1a1a2e',
+            primaryTextColor: '#e0e0e0',
+            primaryBorderColor: '#e94560',
+            lineColor: '#8892b0',
+            secondaryColor: '#16213e',
+            tertiaryColor: '#0f0f1a',
+            noteBkgColor: '#2d1f2f',
+            noteTextColor: '#e94560',
+            noteBorderColor: '#e94560'
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Clases — Después de Refactorizar</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            width: 100%;
+            padding: 2rem 0 1rem;
+            text-align: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 2px solid #64ffda;
+        }
+        header h1 {
+            font-size: 2rem;
+            color: #64ffda;
+            letter-spacing: 2px;
+        }
+        header p {
+            margin-top: .5rem;
+            color: #8892b0;
+            font-size: 1rem;
+        }
+        .badge-good {
+            display: inline-block;
+            margin-top: .8rem;
+            padding: .35rem 1.2rem;
+            background: rgba(100, 255, 218, .10);
+            border: 1px solid #64ffda;
+            border-radius: 20px;
+            color: #64ffda;
+            font-weight: 600;
+            font-size: .85rem;
+        }
+        #diagram-container {
+            flex: 1;
+            width: 95%;
+            max-width: 1200px;
+            margin: 2rem auto;
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid #233554;
+        }
+        .mermaid { text-align: center; }
+        .legend {
+            width: 95%;
+            max-width: 1200px;
+            margin: 0 auto 2rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            font-size: .85rem;
+            color: #8892b0;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        footer {
+            width: 100%;
+            text-align: center;
+            padding: 1.2rem;
+            color: #4a5568;
+            font-size: .8rem;
+            border-top: 1px solid #233554;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Diagrama de Clases — DESPUÉS</h1>
+    <p>Código refactorizado aplicando Creator (GRASP) y SRP (SOLID)</p>
+    <span class="badge-good">✓ Principios correctamente aplicados</span>
+</header>
+
+<div id="diagram-container">
+    <div class="mermaid">
+classDiagram
+    direction LR
+
+    class SistemaBiblioteca {
+        -RepositorioUsuarios repositorio_usuarios
+        -RepositorioPrestamos repositorio_prestamos
+        -Notificador notificador
+        +registrar_usuario(nombre, email) Usuario
+        +realizar_prestamo(usuario, libro) Prestamo
+    }
+
+    class Usuario {
+        +int id
+        +str nombre
+        +str email
+        +Tarjeta tarjeta
+        -_crear_tarjeta() Tarjeta
+    }
+
+    class Tarjeta {
+        +str numero
+        +int usuario_id
+    }
+
+    class Libro {
+        +int id
+        +str titulo
+        +bool disponible
+        +marcar_no_disponible()
+        +marcar_disponible()
+    }
+
+    class Prestamo {
+        +int id
+        +int usuario_id
+        +int libro_id
+    }
+
+    class RepositorioUsuarios {
+        +guardar(usuario)
+    }
+
+    class RepositorioPrestamos {
+        +guardar(prestamo)
+    }
+
+    class Notificador {
+        +enviar_email(email)
+        +notificar_usuario(usuario)
+    }
+
+    SistemaBiblioteca --> RepositorioUsuarios : usa
+    SistemaBiblioteca --> RepositorioPrestamos : usa
+    SistemaBiblioteca --> Notificador : usa
+    SistemaBiblioteca ..> Usuario : crea
+    SistemaBiblioteca ..> Prestamo : crea
+
+    Usuario *-- Tarjeta : crea ✓ Creator
+
+    Libro : gestiona su disponibilidad ✓ SRP
+
+    note for SistemaBiblioteca "Solo orquesta.\nDelega persistencia y notificaciones.\n1 responsabilidad (SRP) ✓"
+    note for Usuario "Creator: Usuario contiene Tarjeta,\npor tanto la crea. ✓"
+    </div>
+</div>
+
+<div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#64ffda;"></div> Principio aplicado correctamente</div>
+    <div class="legend-item"><div class="legend-color" style="background:#bb86fc;"></div> Servicio (SRP)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#8892b0;"></div> Dependencia</div>
+    <div class="legend-item"><div class="legend-color" style="background:#ccd6f6;"></div> Composición (Creator)</div>
+</div>
+
+<footer>Reto Técnico — Grupo 4 · Principios Creator (GRASP) y SRP (SOLID)</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'dark',
+        themeVariables: {
+            primaryColor: '#1a1a2e',
+            primaryTextColor: '#e0e0e0',
+            primaryBorderColor: '#64ffda',
+            lineColor: '#8892b0',
+            secondaryColor: '#16213e',
+            tertiaryColor: '#0f0f1a',
+            noteBkgColor: '#1b2838',
+            noteTextColor: '#64ffda',
+            noteBorderColor: '#64ffda'
+        }
+    });
+</script>
+</body>
+</html>
